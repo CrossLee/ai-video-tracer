@@ -11,6 +11,7 @@
     <div class="panel left-panel">
       <div class="left-panel-header">
         <button id="sidebarIcon" class="icon-btn" title="隐藏任务配置">⟨</button>
+        <button id="toggleHistoryBtn" class="text-btn" style="margin-left: auto;">📜 历史记录</button>
       </div>
       <form id="processForm">
         
@@ -85,6 +86,21 @@
   </div>
   <button id="sidebarHandle" class="sidebar-handle" title="显示任务配置">⟩</button>
 
+  <!-- History Drawer -->
+  <div id="historyDrawer" class="history-drawer">
+    <div class="history-header">
+      <h3>历史记录</h3>
+      <div class="header-actions">
+        <button id="refreshHistoryBtn" class="icon-btn" title="刷新">↻</button>
+        <button id="clearHistoryBtn" class="icon-btn danger" title="清空所有">🗑</button>
+        <button id="closeHistoryBtn" class="icon-btn" title="关闭">×</button>
+      </div>
+    </div>
+    <div id="historyList" class="history-list">
+      <div class="empty-history">加载中...</div>
+    </div>
+  </div>
+
   <!-- 模板：视频输入项 -->
   <template id="videoInputTemplate">
     <div class="video-item-input" data-index="">
@@ -128,6 +144,28 @@
           <p>处理中...</p>
         </div>
         <div class="error-msg" style="display: none; color: #e74c3c;"></div>
+      </div>
+    </div>
+  </template>
+
+  <!-- 模板：历史记录项 -->
+  <template id="historyItemTemplate">
+    <div class="history-item">
+      <div class="history-meta">
+        <span class="history-time"></span>
+        <button class="delete-history-item-btn" title="删除此条">×</button>
+      </div>
+      <div class="history-summary">
+         <div class="history-prompt-row"><strong>提示词:</strong> <span class="history-prompt"></span></div>
+         <div class="history-info-row">
+           <span class="history-config-tag"></span>
+         </div>
+      </div>
+      <div class="history-files-preview">
+        <!-- 缩略图或文件列表 -->
+      </div>
+      <div class="history-controls">
+        <button class="load-history-btn secondary-btn small-btn">加载此配置</button>
       </div>
     </div>
   </template>

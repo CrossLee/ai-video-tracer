@@ -1,13 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import Replicate from 'replicate';
-import { writeFile } from 'fs/promises';
+import { writeFile, readFile, appendFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const HISTORY_FILE = path.join(__dirname, 'history.txt');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -103,6 +105,79 @@ app.post('/api/run', async (req, res) => {
 
   } catch (error) {
     console.error("API Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper to ensure history file exists
+async function ensureHistoryFile() {
+  if (!existsSync(HISTORY_FILE)) {
+    await writeFile(HISTORY_FILE, '', 'utf8');
+  }
+}
+
+// History APIs
+app.get('/api/history', async (req, res) => {
+  try {
+    await ensureHistoryFile();
+    const data = await readFile(HISTORY_FILE, 'utf8');
+    const records = data.trim().split('\n')
+      .filter(line => line.trim())
+      .map(line => {
+        try { return JSON.parse(line); } catch (e) { return null; }
+      })
+      .filter(r => r !== null)
+      .reverse();
+    res.json(records);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/history', async (req, res) => {
+  try {
+    const record = req.body;
+    if (!record) return res.status(400).json({ error: "No data" });
+
+    // Add metadata if missing
+    if (!record.timestamp) record.timestamp = new Date().toISOString();
+    if (!record.id) record.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+    const line = JSON.stringify(record) + '\n';
+    await appendFile(HISTORY_FILE, line, 'utf8');
+    
+    res.json({ success: true, id: record.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/history', async (req, res) => {
+  try {
+    await writeFile(HISTORY_FILE, '', 'utf8');
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/history/:id', async (req, res) => {
+  try {
+    await ensureHistoryFile();
+    const { id } = req.params;
+    const data = await readFile(HISTORY_FILE, 'utf8');
+    const lines = data.trim().split('\n').filter(l => l.trim());
+    
+    const newLines = lines.filter(line => {
+      try {
+        const r = JSON.parse(line);
+        return r.id !== id;
+      } catch (e) { return false; }
+    });
+
+    await writeFile(HISTORY_FILE, newLines.join('\n') + (newLines.length ? '\n' : ''), 'utf8');
+    res.json({ success: true });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
