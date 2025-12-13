@@ -11,7 +11,8 @@
     <div class="panel left-panel">
       <div class="left-panel-header">
         <button id="sidebarIcon" class="icon-btn" title="隐藏任务配置">⟨</button>
-        <button id="toggleHistoryBtn" class="text-btn" style="margin-left: auto;">📜 历史记录</button>
+        <button id="toggleHistoryBtn" class="text-btn" style="margin-left: 10px;">📜 历史记录</button>
+        <a href="index1.html" class="text-btn" style="margin-left: auto; text-decoration: none; display: flex; align-items: center;">🚀 进入新版</a>
       </div>
       <form id="processForm">
         
@@ -20,7 +21,7 @@
           <h3>全局设置</h3>
           
           <div class="form-group">
-            <label for="global_prompt">提示词 (Prompt)</label>
+            <label for="global_prompt">检索目标 (Prompt)</label>
             <input type="text" id="global_prompt" name="global_prompt" placeholder="例如: blue boy" required>
             <small class="hint">此提示词将应用于所有视频任务。</small>
           </div>
@@ -117,7 +118,7 @@
   <!-- 模板：输入预览项 -->
   <template id="inputPreviewTemplate">
     <div class="video-item-preview" data-index="">
-      <div class="item-label">任务 #<span class="index-display">1</span></div>
+      <div class="item-label" style="justify-content: start;">任务 #<span class="index-display">1</span></div>
       <div class="video-wrapper">
         <video controls>
           您的浏览器不支持 Video 标签。

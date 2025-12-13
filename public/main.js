@@ -112,7 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
       item.querySelector('.history-config-tag').textContent = `${mode} | ${record.config.mask_color} | Opacity: ${record.config.mask_opacity}`;
       
       const fileCount = record.inputVideo ? record.inputVideo.length : 0;
-      item.querySelector('.history-files-preview').innerHTML = `<small>包含 ${fileCount} 个视频</small>`;
+      let extraInfo = '';
+      if (record.zipAnalysis && record.zipAnalysis.some(a => a && a.imageCount)) {
+          const totalFrames = record.zipAnalysis.reduce((acc, curr) => acc + (curr ? curr.imageCount : 0), 0);
+          extraInfo = ` | <span style="color:#2ecc71;">共检索 ${totalFrames} 帧</span>`;
+      }
+      item.querySelector('.history-files-preview').innerHTML = `<small>包含 ${fileCount} 个视频${extraInfo}</small>`;
 
       item.querySelector('.load-history-btn').addEventListener('click', () => {
         restoreHistoryRecord(record);
@@ -167,8 +172,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     video.style.display = 'block';
                     placeholder.style.display = 'none';
                     
-                    const isZip = outputUrl.endsWith('.zip');
-                    if (isZip) {
+                    const isZip = outputUrl.endsWith('.zip') || (record.zipAnalysis && record.zipAnalysis[i]);
+                    
+                    if (record.zipAnalysis && record.zipAnalysis[i] && record.zipAnalysis[i].success) {
+                        const count = record.zipAnalysis[i].imageCount;
+                        const zipPath = record.zipAnalysis[i].zipPath;
+                        downloadLink.innerHTML = `
+                            <div style="display:flex; align-items:center; gap:10px; width:100%; justify-content:flex-end;">
+                                <span style="color:#2ecc71; font-weight:bold; white-space:nowrap;">检索到 ${count} 帧目标</span>
+                                <a href="${zipPath}" target="_blank" class="download-btn" style="white-space:nowrap;">📥 下载原始ZIP</a>
+                            </div>
+                        `;
+                    } else if (outputUrl.endsWith('.zip')) {
                          downloadLink.innerHTML = `<a href="${outputUrl}" target="_blank" class="download-btn">📥 下载结果 ZIP</a>`;
                     } else {
                          downloadLink.innerHTML = `<a href="${outputUrl}" target="_blank">🔗 下载视频</a>`;
@@ -392,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         config: globalSettings,
         inputVideo: tasks.map(t => t.video),
         outputVideo: new Array(tasks.length).fill(null), // Initialize with null
+        zipAnalysis: new Array(tasks.length).fill(null), // Store analysis data
         timestamp: new Date().toISOString()
     };
 
@@ -404,13 +420,18 @@ document.addEventListener('DOMContentLoaded', () => {
         await Promise.race(activePromises);
       }
 
-      const p = processTask(task).then((resultUrl) => {
+      const p = processTask(task).then((resultData) => {
           // Success: Store result
-          if (resultUrl) {
-              // Find index in tasks to map to outputVideo
-              // task is the same object reference from tasks array? Yes.
-              // But we need the index.
-              batchHistory.outputVideo[i] = resultUrl;
+          if (resultData) {
+              // Check if it's object or string
+              if (typeof resultData === 'object' && resultData.url) {
+                   batchHistory.outputVideo[i] = resultData.url;
+                   if (resultData.zipAnalysis) {
+                       batchHistory.zipAnalysis[i] = resultData.zipAnalysis;
+                   }
+              } else {
+                   batchHistory.outputVideo[i] = resultData;
+              }
           }
       }).catch(() => {
           // Failed
@@ -467,11 +488,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         if (task.return_zip) {
-          placeholder.textContent = '处理完成 (ZIP)';
-          placeholder.style.display = 'block';
-          downloadLink.innerHTML = `<a href="${result.url}" target="_blank" class="download-btn">📥 下载结果 ZIP</a><br><small>${result.filename}</small>`;
-          downloadLink.style.display = 'block';
+            // ZIP handling
+            if (result.zipAnalysis && result.zipAnalysis.success) {
+                // Extracted mode
+                video.src = result.url; // This is now the extracted video path
+                video.style.display = 'block';
+                video.load();
+                video.play().catch(e => console.log('Autoplay blocked', e));
+                placeholder.style.display = 'none';
+
+                const count = result.zipAnalysis.imageCount;
+                 downloadLink.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px; width:100%; justify-content:flex-end;">
+                        <span style="color:#2ecc71; font-weight:bold; white-space:nowrap;">检索到 ${count} 帧目标</span>
+                        <a href="${result.zipAnalysis.zipPath}" target="_blank" class="download-btn" style="white-space:nowrap;">📥 下载原始ZIP</a>
+                    </div>
+                 `;
+                 downloadLink.style.display = 'block';
+            } else {
+                // Fallback to standard ZIP download if extraction failed or not available
+                placeholder.textContent = '处理完成 (ZIP)';
+                placeholder.style.display = 'block';
+                downloadLink.innerHTML = `<a href="${result.url}" target="_blank" class="download-btn">📥 下载结果 ZIP</a><br><small>${result.filename}</small>`;
+                downloadLink.style.display = 'block';
+            }
         } else {
+          // Video 模式
           video.src = result.url;
           video.style.display = 'block';
           video.load();
@@ -480,7 +522,8 @@ document.addEventListener('DOMContentLoaded', () => {
           downloadLink.innerHTML = `<a href="${result.url}" target="_blank">🔗 下载视频</a>`;
           downloadLink.style.display = 'block';
         }
-        return result.url;
+        // Return full result object instead of just URL so we can access analysis data
+        return result;
       } else {
         if (response.status === 429) throw new Error('请求过于频繁');
         throw new Error(result.error || '未知错误');

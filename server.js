@@ -6,6 +6,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
+import { processZip } from './zip-analysis.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +19,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public')); // Serve static files from 'public' directory
+app.use('/zip', express.static('zip')); // Serve extracted ZIP files
 
 // Replicate Setup
 const replicate = new Replicate({
@@ -73,35 +75,32 @@ app.post('/api/run', async (req, res) => {
         outputUrl = String(output);
     }
 
-    // Generate a local filename for reference (we aren't downloading it here to keep it fast, 
-    // but we could if we wanted to proxy it. For now just return the Replicate URL).
-    // The previous implementation downloaded it. Let's stick to returning the URL 
-    // but maybe we don't need to save it locally unless the user wants to.
-    // The previous code DID save it locally. Let's replicate that behavior if useful, 
-    // or just return the URL to be faster.
-    // The user's prompt "在右边就是播放返回输出的mp4" implies we need a playable URL.
-    // Replicate URLs are public for a while.
-    
-    // Let's try to save it locally to be safe, as per previous logic
-    // But downloading takes time. Let's just return the URL for the frontend to play directly.
-    // This is faster and better for UX.
-    
-    // However, for the "filename" part in the frontend, we can generate a name but not save it.
+    // Generate a local filename for reference
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const videoUrlObj = new URL(sanitizedVideo);
     const baseVideoName = (videoUrlObj.pathname.split('/').pop() || 'video').replace(/\.[^/.]+$/, '');
     const promptName = (prompt || 'default').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const outName = `output_${promptName}_${baseVideoName}_${timestamp}.${return_zip ? 'zip' : 'mp4'}`;
 
-    // If we want to save it locally we would need to fetch outputUrl and write to outName.
-    // I will skip local saving for now to make the response faster, 
-    // unless the previous implementation relied on local serving.
-    // The frontend uses `result.url` to play/download. Replicate URL is fine.
-    
-    res.json({ 
-      url: outputUrl, 
-      filename: outName // Just for display
-    });
+    // Process ZIP if requested
+    let responseData = {
+      url: outputUrl,
+      filename: outName
+    };
+
+    if (return_zip && outputUrl) {
+      console.log("Processing ZIP result...");
+      const zipAnalysis = await processZip(outputUrl);
+      if (zipAnalysis.success) {
+        // Override URL with the local extracted video path if found, or keep original if not
+        if (zipAnalysis.videoPath) {
+            responseData.url = zipAnalysis.videoPath;
+        }
+        responseData.zipAnalysis = zipAnalysis;
+      }
+    }
+
+    res.json(responseData);
 
   } catch (error) {
     console.error("API Error:", error);
