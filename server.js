@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
 import { processZip } from './zip-analysis.js';
+import { analyzeImage } from './image-analysis.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increase limit for base64 images
 app.use(express.static('public')); // Serve static files from 'public' directory
 app.use('/zip', express.static('zip')); // Serve extracted ZIP files
 
@@ -147,6 +148,25 @@ app.post('/api/history', async (req, res) => {
     
     res.json({ success: true, id: record.id });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Image Analysis API
+app.post('/api/analyze-image', async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+    if (!imageUrl) {
+      return res.status(400).json({ error: "Image URL or Base64 is required" });
+    }
+
+    console.log("Analyzing image...");
+    const description = await analyzeImage(imageUrl);
+    console.log("Image analysis result:", description);
+    
+    res.json({ description });
+  } catch (error) {
+    console.error("Image Analysis API Error:", error);
     res.status(500).json({ error: error.message });
   }
 });

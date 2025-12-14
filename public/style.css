@@ -86,7 +86,7 @@ body {
 /* Left Panel: Parameters */
 .left-panel {
   grid-column: 1;
-  min-width: var(--sidebar-width);
+  /* min-width: var(--sidebar-width); */
   max-width: var(--sidebar-width);
 }
 

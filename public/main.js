@@ -19,6 +19,71 @@ document.addEventListener('DOMContentLoaded', () => {
   const historyList = document.getElementById('historyList');
   const historyItemTemplate = document.getElementById('historyItemTemplate');
 
+  // Image Upload Logic
+  const uploadImageBtn = document.getElementById('uploadImageBtn');
+  const imageInput = document.getElementById('imageInput');
+  const globalPromptInput = document.getElementById('global_prompt');
+
+  if (uploadImageBtn && imageInput) {
+    uploadImageBtn.addEventListener('click', () => {
+      imageInput.click();
+    });
+
+    imageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Show loading state
+      const originalBtnText = uploadImageBtn.textContent;
+      uploadImageBtn.textContent = '⏳';
+      uploadImageBtn.disabled = true;
+      globalPromptInput.placeholder = '正在分析图片...';
+
+      try {
+        // Convert to Base64
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64String = reader.result;
+
+          // Call API
+          const response = await fetch('/api/analyze-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: base64String })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.description) {
+            globalPromptInput.value = data.description;
+            // Highlight effect
+            globalPromptInput.style.backgroundColor = '#2c3e50';
+            setTimeout(() => {
+              globalPromptInput.style.backgroundColor = '';
+            }, 500);
+          } else {
+            alert('图片分析失败: ' + (data.error || '未知错误'));
+          }
+          
+          // Reset UI
+          uploadImageBtn.textContent = originalBtnText;
+          uploadImageBtn.disabled = false;
+          globalPromptInput.placeholder = '例如: blue boy';
+          imageInput.value = ''; // Reset file input
+        };
+        reader.readAsDataURL(file);
+
+      } catch (error) {
+        console.error('Upload Error:', error);
+        alert('上传处理出错');
+        uploadImageBtn.textContent = originalBtnText;
+        uploadImageBtn.disabled = false;
+        globalPromptInput.placeholder = '例如: blue boy';
+        imageInput.value = '';
+      }
+    });
+  }
+
   // Sidebar Logic
   const updateSidebarUI = (collapsed) => {
     if (toggleSidebarBtn) {
