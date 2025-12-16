@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>人贩终结者，海量视频监测与推理</title>
+  <link rel="stylesheet" href="style_white.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 左侧：参数输入 -->
+    <div class="panel left-panel">
+      <div class="left-panel-header">
+        <button id="sidebarIcon" class="icon-btn" title="隐藏任务配置">⟨</button>
+        <div style="margin-left: auto; display: flex; gap: 10px; align-items: center; white-space: nowrap;">
+          <button id="toggleHistoryBtn" class="text-btn" style="margin-left: 0; margin-top: 0;">📜 历史记录</button>
+          <a href="index1.html" class="text-btn" style="text-decoration: none; display: flex; align-items: center; margin-left: 0;margin-right: 10px;">🚀 未来规划</a>
+        </div>
+      </div>
+      <form id="processForm">
+        
+        <!-- 全局参数 -->
+        <div class="global-settings">
+          <h3>全局设置</h3>
+          
+          <div class="form-group">
+            <label for="global_prompt">检索目标 (Prompt)</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="global_prompt" name="global_prompt" placeholder="例如: blue boy" required style="flex: 1;">
+              <button type="button" id="uploadImageBtn" class="icon-btn" title="上传图片自动生成提示词" style="width: 40px; margin-top: 0;">📷</button>
+            </div>
+            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+            <small class="hint">此提示词将应用于所有视频任务。点击相机图标上传图片可自动生成。</small>
+          </div>
+
+          <div class="form-group">
+            <label for="mask_color">掩码颜色</label>
+            <select id="mask_color" name="mask_color">
+              <option value="red">红色 (Red)</option>
+              <option value="blue">蓝色 (Blue)</option>
+              <option value="green">绿色 (Green)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="mask_opacity">掩码透明度</label>
+            <input type="number" id="mask_opacity" name="mask_opacity" step="0.1" min="0" max="1" value="0.8" required>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="mask_only" name="mask_only" value="true">
+            <label for="mask_only">仅显示掩码 (Mask Only)</label>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="return_zip" name="return_zip" value="true">
+            <label for="return_zip">返回 ZIP 包</label>
+          </div>
+
+          <div class="form-group">
+            <label for="concurrent_limit">并发处理限制</label>
+            <input type="number" id="concurrent_limit" name="concurrent_limit" min="1" value="1" required>
+            <small class="hint">1 为顺序处理；>1 开启多线程并发。</small>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- 视频列表 -->
+        <div id="videoList">
+          <!-- 动态添加的视频输入项将放在这里 -->
+        </div>
+
+        <button type="button" id="addVideoBtn" class="secondary-btn">+ 添加视频任务</button>
+        <button type="submit" id="submitBtn">开始处理所有任务</button>
+      </form>
+    </div>
+
+    <!-- 中间：输入预览 -->
+    <div class="panel middle-panel">
+      <h2>输入预览</h2>
+      <div id="inputPreviewList" class="video-list">
+        <!-- 动态添加 -->
+      </div>
+    </div>
+
+    <!-- 右侧：结果输出 -->
+    <div class="panel right-panel">
+      <h2>处理结果</h2>
+      <div id="outputResultList" class="video-list">
+        <!-- 动态添加 -->
+      </div>
+    </div>
+  </div>
+  <button id="sidebarHandle" class="sidebar-handle" title="显示任务配置">⟩</button>
+
+  <!-- History Drawer -->
+  <div id="historyDrawer" class="history-drawer">
+    <div class="history-header">
+      <h3>历史记录</h3>
+      <div class="header-actions">
+        <button id="refreshHistoryBtn" class="icon-btn" title="刷新">↻</button>
+        <button id="clearHistoryBtn" class="icon-btn danger" title="清空所有">🗑</button>
+        <button id="closeHistoryBtn" class="icon-btn" title="关闭">×</button>
+      </div>
+    </div>
+    <div id="historyList" class="history-list">
+      <div class="empty-history">加载中...</div>
+    </div>
+  </div>
+
+  <!-- 模板：视频输入项 -->
+  <template id="videoInputTemplate">
+    <div class="video-item-input" data-index="">
+      <div class="header-row">
+        <span class="item-title" title="双击修改名称">任务 #<span class="index-display">1</span></span>
+        <button type="button" class="delete-btn" title="删除">×</button>
+      </div>
+      <div class="form-group">
+        <input type="text" name="video[]" class="video-url-input" placeholder="视频 URL (.mp4)" required>
+      </div>
+    </div>
+  </template>
+
+  <!-- 模板：输入预览项 -->
+  <template id="inputPreviewTemplate">
+    <div class="video-item-preview" data-index="">
+      <div class="item-label" style="justify-content: start;">任务 #<span class="index-display">1</span></div>
+      <div class="video-wrapper">
+        <video controls>
+          您的浏览器不支持 Video 标签。
+        </video>
+        <div class="placeholder">请输入视频 URL</div>
+      </div>
+    </div>
+  </template>
+
+  <!-- 模板：结果输出项 -->
+  <template id="outputResultTemplate">
+    <div class="video-item-result" data-index="">
+      <div class="item-label">
+        <span class="label-text">任务 #<span class="index-display">1</span></span>
+        <div class="download-link" style="display: none;"></div>
+      </div>
+      <div class="video-wrapper">
+        <video controls style="display: none;">
+          您的浏览器不支持 Video 标签。
+        </video>
+        <div class="placeholder">等待处理...</div>
+        <div class="loading" style="display: none;">
+          <div class="spinner"></div>
+          <p>处理中...</p>
+        </div>
+        <div class="error-msg" style="display: none; color: #e74c3c;"></div>
+      </div>
+    </div>
+  </template>
+
+  <!-- 模板：历史记录项 -->
+  <template id="historyItemTemplate">
+    <div class="history-item">
+      <div class="history-meta">
+        <span class="history-time"></span>
+        <button class="delete-history-item-btn" title="删除此条">×</button>
+      </div>
+      <div class="history-summary">
+         <div class="history-prompt-row"><strong>提示词:</strong> <span class="history-prompt"></span></div>
+         <div class="history-info-row">
+           <span class="history-config-tag"></span>
+         </div>
+      </div>
+      <div class="history-files-preview">
+        <!-- 缩略图或文件列表 -->
+      </div>
+      <div class="history-controls">
+        <button class="load-history-btn secondary-btn small-btn">加载此配置</button>
+      </div>
+    </div>
+  </template>
+
+  <script src="main.js"></script>
+</body>
+</html>
