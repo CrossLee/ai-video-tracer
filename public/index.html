@@ -42,22 +42,22 @@
             </select>
           </div>
 
-          <div class="form-group">
-            <label for="mask_opacity">掩码透明度</label>
+          <div class="form-group" style="display: none;">
+            <label for="mask_opacity" >掩码透明度</label>
             <input type="number" id="mask_opacity" name="mask_opacity" step="0.1" min="0" max="1" value="0.8" required>
           </div>
 
-          <div class="checkbox-group">
+          <div class="checkbox-group" style="display: none;">
             <input type="checkbox" id="mask_only" name="mask_only" value="true">
             <label for="mask_only">仅显示掩码 (Mask Only)</label>
           </div>
 
           <div class="checkbox-group">
             <input type="checkbox" id="return_zip" name="return_zip" value="true">
-            <label for="return_zip">返回 ZIP 包</label>
+            <label for="return_zip">帧数据返回</label>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" style="display: none;">
             <label for="concurrent_limit">并发处理限制</label>
             <input type="number" id="concurrent_limit" name="concurrent_limit" min="1" value="1" required>
             <small class="hint">1 为顺序处理；>1 开启多线程并发。</small>

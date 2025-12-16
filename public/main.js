@@ -268,9 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const presetVideos = [
     'https://public-temp-no-auth.oss-cn-shanghai.aliyuncs.com/sam3/samsource-1.mp4',
-    'https://public-temp-no-auth.oss-cn-shanghai.aliyuncs.com/sam3/samsource-2.mp4',
-    'https://public-temp-no-auth.oss-cn-shanghai.aliyuncs.com/sam3/samsource-3.mp4',
-    'https://public-temp-no-auth.oss-cn-shanghai.aliyuncs.com/sam3/samsource-4.mp4'
+    // 'https://public-temp-no-auth.oss-cn-shanghai.aliyuncs.com/sam3/samsource-2.mp4',
+    // 'https://public-temp-no-auth.oss-cn-shanghai.aliyuncs.com/sam3/samsource-3.mp4',
+    // 'https://public-temp-no-auth.oss-cn-shanghai.aliyuncs.com/sam3/samsource-4.mp4'
   ];
 
   if (presetVideos.length > 0) {
