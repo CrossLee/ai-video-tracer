@@ -5,7 +5,7 @@ ai-video-tracer
 团队成员除了我还有林鸟、姜书。感谢团队的共同努力，我们最终获得了 S1 的最高人气项目。
 
 
-![演示视频](https://github.com/CrossLee/ai-video-tracer/raw/refs/heads/main/%E4%BA%BA%E8%B4%A9%E7%BB%88%E7%BB%93%E8%80%85.mp4)
+演示视频：https://github.com/CrossLee/ai-video-tracer/raw/refs/heads/main/%E4%BA%BA%E8%B4%A9%E7%BB%88%E7%BB%93%E8%80%85.mp4
 
 运行步骤：
 1. 下载项目
